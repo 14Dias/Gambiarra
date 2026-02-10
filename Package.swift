@@ -10,13 +10,14 @@ import AppleProductTypes
 let package = Package(
     name: "PlaygroundTemplate",
     platforms: [
-        .iOS("18.0")
+        .iOS("26.0")
     ],
     products: [
         .iOSApplication(
             name: "PlaygroundTemplate",
             targets: ["AppModule"],
-            bundleIdentifier: "br.puc-rio.ecoa.academy.template.PlaygroundTemplate",
+            bundleIdentifier: "com.lucadias.prototipagem.app123",
+            teamIdentifier: "8CTC75M93B",
             displayVersion: "1.0",
             bundleVersion: "1",
             appIcon: .placeholder(icon: .cloud),
@@ -42,5 +43,5 @@ let package = Package(
             ]
         )
     ],
-    swiftLanguageVersions: [.version("6")]
+    swiftLanguageModes: [.version("6")]
 )

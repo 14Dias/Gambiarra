@@ -19,19 +19,5 @@ struct MyApp: App {
             ContentView()
         }
     }
-    
-    /// You must put  every font file you want to use in the Resouces folder in
-    /// your project and then put its name on the array below
-    let myCustomFontFileNames = [
-        "Merriweather-VariableFont_opsz,wdth,wght.ttf",
-        "Merriweather-Italic-VariableFont_opsz,wdth,wght.ttf",
-        // "some other name"...
-    ]
-    
-    init() {
-        FontLoader.loadCustomFonts(myCustomFontFileNames)
-    }
-    
-    
 }
 
