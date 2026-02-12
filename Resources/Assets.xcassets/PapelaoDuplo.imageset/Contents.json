@@ -1,11 +1,11 @@
 {
   "images" : [
     {
-      "filename" : "PapelaoDuplo.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "PapelaoDuplo.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

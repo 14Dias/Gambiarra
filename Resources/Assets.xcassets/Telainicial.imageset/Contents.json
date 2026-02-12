@@ -1,11 +1,11 @@
 {
   "images" : [
     {
-      "filename" : "Telainicial.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "Telainicial.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
