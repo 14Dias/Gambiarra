@@ -1,185 +1,130 @@
-import AVFoundation
 import SwiftUI
+import SpriteKit
 
 struct TelaCraft: View {
     @ObservedObject var estado: EstadoDoJogo
     
-    @State private var slot1: MaterialDescoberto?
-    @State private var slot2: MaterialDescoberto?
+    // Scene Holder
+    @State private var scene = WorkbenchScene()
     
-    @State private var mensagemFeedback: String = "Arrasta 2 materiais para combinar!"
-    @State private var feedbackCor: Color = .white
-    @State private var mostrarSucesso: Bool = false
-    @State private var assetResultadoAtual: String = "Interrogacao"
-    
-    var receitaAtual: CombinacaoCraft? {
-        estado.combinacoes.first(where: { $0.rodada == estado.rodadaCraftAtual })
-    }
+    @State private var ferramentaSelecionada: ToolType = .hand
+    @State private var mostrarConfirmacao = false
     
     var body: some View {
         ZStack {
-            Image("TelaFundo")
-                .resizable()
-                .scaledToFill()
+            // 1. O Mundo SpriteKit
+            SpriteView(scene: scene)
                 .ignoresSafeArea()
-                .opacity(0.9)
+                .onAppear {
+                    scene.size = CGSize(width: 1024, height: 768)
+                    scene.scaleMode = .aspectFill
+                    scene.baseType = estado.rodadaCraftAtual == 1 ? .rolo : .papel
+                    scene.selectedTool = ferramentaSelecionada
+                }
+                .onChange(of: ferramentaSelecionada) { newTool in
+                    scene.selectedTool = newTool
+                }
             
-            GeometryReader { geo in
-                VStack {
-                    HStack {
-                        Text("Protótipo \(estado.rodadaCraftAtual) de 3")
-                            .font(.headline)
-                            .padding(10)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(10)
-                        Spacer()
-                    }
-                    .padding()
-                    
-                    Spacer()
-                    
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white.opacity(0.3))
-                            .frame(width: geo.size.width * 0.9, height: 300)
-                        
-                        if mostrarSucesso {
-                            VStack {
-                                Image(assetResultadoAtual)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 180)
-                                    .transition(.scale)
-                                
-                                Text("Sucesso!")
-                                    .font(.largeTitle.bold())
-                                    .foregroundColor(.green)
-                                
-                                Button("Próximo") {
-                                    avancarRodada()
-                                }
-                                .buttonStyle(.borderedProminent)
-                            }
-                        } else {
-                            HStack(spacing: 50) {
-                                SlotView(material: slot1, placeholder: "1")
-                                    .onTapGesture { slot1 = nil }
-                                
-                                Image(systemName: "plus")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.white)
-                                
-                                SlotView(material: slot2, placeholder: "2")
-                                    .onTapGesture { slot2 = nil }
-                            }
+            // 2. Interface do Usuário (Overlay)
+            VStack {
+                // Header
+                HStack {
+                    Button(action: {
+                        withAnimation {
+                            let novaCena = WorkbenchScene()
+                            novaCena.size = CGSize(width: 1024, height: 768)
+                            novaCena.scaleMode = .aspectFill
+                            novaCena.baseType = estado.rodadaCraftAtual == 1 ? .rolo : .papel
+                            novaCena.selectedTool = ferramentaSelecionada
+                            scene = novaCena
                         }
-                    }
-                    
-                    Text(mensagemFeedback)
-                        .font(.headline)
-                        .foregroundColor(feedbackCor)
-                        .padding()
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .leading) {
-                        Text("Mochila de Materiais")
-                            .font(.headline)
+                    }) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.largeTitle)
                             .foregroundColor(.white)
-                            .padding(.leading)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 20) {
-                                ForEach(estado.materiais) { material in
-                                    Image(material.assetImagem)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 70, height: 70)
-                                        .padding(5)
-                                        .background(Color.white.opacity(0.5))
-                                        .cornerRadius(10)
-                                        .onTapGesture {
-                                            adicionarMaterial(material)
-                                        }
-                                }
-                            }
-                            .padding()
-                        }
-                        .background(Color.black.opacity(0.2))
+                            .shadow(radius: 3)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("Modo Criação Livre")
+                        .font(.headline)
+                        .padding(8)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        mostrarConfirmacao = true
+                    }) {
+                        Text("Concluir")
+                            .bold()
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
+                            .shadow(radius: 3)
                     }
                 }
-            }
-        }
-        // CORREÇÃO: Sintaxe nova do onChange para iOS 17+
-        .onChange(of: slot1) { _ in verificarCombinacao() }
-        .onChange(of: slot2) { _ in verificarCombinacao() }
-    }
-    
-    func adicionarMaterial(_ mat: MaterialDescoberto) {
-        guard !mostrarSucesso else { return }
-        
-        withAnimation {
-            if slot1 == nil {
-                slot1 = mat
-            } else if slot2 == nil {
-                slot2 = mat
-            }
-        }
-    }
-    
-    func verificarCombinacao() {
-        guard let m1 = slot1, let m2 = slot2, let receita = receitaAtual else {
-            mensagemFeedback = "Escolhe dois materiais..."
-            feedbackCor = .white
-            return
-        }
-        
-        let nomesSelecionados = [m1.nome, m2.nome]
-        let ingredientesCertos = [receita.material1Nome, receita.material2Nome]
-        
-        let acertou = nomesSelecionados.allSatisfy(ingredientesCertos.contains) && nomesSelecionados.count == ingredientesCertos.count && m1.nome != m2.nome
-        
-        if acertou {
-            feedbackCor = .green
-            mensagemFeedback = "A CRIAR..."
-            
-            withAnimation(.easeInOut(duration: 0.5)) {
-                assetResultadoAtual = receita.assetResultado
-                mostrarSucesso = true
-                slot1 = nil
-                slot2 = nil
-            }
-        } else {
-            feedbackCor = .red
-            mensagemFeedback = "Essa combinação não funciona. Tenta outra!"
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation {
-                    slot1 = nil
-                    slot2 = nil
-                    feedbackCor = .white
-                    mensagemFeedback = "Tenta de novo!"
+                .padding()
+                
+                Spacer()
+                
+                // 3. Tool Palette (Apple Pencil Style)
+                HStack(spacing: 20) {
+                    ForEach(ToolType.allCases) { tool in
+                        Button(action: {
+                            ferramentaSelecionada = tool
+                        }) {
+                            VStack(spacing: 5) {
+                                Image(systemName: tool.rawValue)
+                                    .font(.system(size: 28))
+                                    .frame(width: 50, height: 50)
+                                    .background(ferramentaSelecionada == tool ? Color.white : Color.clear)
+                                    .foregroundColor(ferramentaSelecionada == tool ? .black : .white)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5)
+                                    .scaleEffect(ferramentaSelecionada == tool ? 1.2 : 1.0)
+                                    .animation(.spring(), value: ferramentaSelecionada)
+                                
+                                Text(nomeFerramenta(tool))
+                                    .font(.caption2)
+                                    .foregroundColor(.black)
+                                    .opacity(ferramentaSelecionada == tool ? 1 : 0.6)
+                            }
+                        }
+                    }
                 }
+                .padding(.horizontal, 30)
+                .padding(.vertical, 15)
+                .background(.ultraThinMaterial)
+                .cornerRadius(40)
+                .shadow(radius: 10)
+                .padding(.bottom, 20)
             }
+        }
+        .alert("Terminou sua criação?", isPresented: $mostrarConfirmacao) {
+            Button("Sim, ficou ótimo!", role: .none) {
+                estado.avancarParaCraft() // Ou lógica de salvar
+            }
+            Button("Ainda não", role: .cancel) {}
         }
     }
     
-    func avancarRodada() {
-        if estado.rodadaCraftAtual < 3 {
-            withAnimation {
-                estado.rodadaCraftAtual += 1
-                mostrarSucesso = false
-                mensagemFeedback = "Vamos para o próximo protótipo!"
-            }
-        } else {
-            withAnimation {
-                estado.telaAtual = .parabenizacao
-            }
+    func nomeFerramenta(_ tool: ToolType) -> String {
+        switch tool {
+        case .hand: return "Mover"
+        case .scissors: return "Cortar"
+        case .glue: return "Cola"
+        case .tape: return "Fita"
+        case .clip: return "Clips"
+        case .button: return "Botão"
         }
     }
 }
+
 #Preview(traits: .landscapeLeft) {
-    // Cria um estado de jogo de exemplo para o Preview
-    let exemplo = EstadoDoJogo()
-    return TelaCraft(estado: exemplo)
+    TelaCraft(estado: EstadoDoJogo())
 }

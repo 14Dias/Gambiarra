@@ -7,6 +7,7 @@ enum TelaJogo {
     case inicio
     case explicacao
     case descoberta
+    case explicacao2 // Adicionado novo estado
     case craft
     case parabenizacao
 }

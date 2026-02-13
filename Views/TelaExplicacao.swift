@@ -5,9 +5,6 @@ struct TelaExplicacao: View {
     @ObservedObject var estado: EstadoDoJogo
     @State private var textoExibido: String = ""
     @State private var textoCompleto: Bool = false
-    @State private var fase = 0
-    
-    // CORREÇÃO: Usamos Task em vez de Timer para segurança de concorrência
     @State private var digitacaoTask: Task<Void, Never>?
     
     var textoAtual: String {
@@ -55,11 +52,9 @@ struct TelaExplicacao: View {
                             .offset(y: -120)
                         }
 
-                        // Reserva de espaço à direita para o gato (200 de largura + 32 de margem)
                         Spacer().frame(width: 232)
                     }
 
-                    // GatoB ancorado à direita por cima da caixa de texto
                     HStack {
                         Spacer()
                         Image("GatoB")
@@ -75,7 +70,6 @@ struct TelaExplicacao: View {
         .onAppear {
             comecarDigitacao()
         }
-        // Cancelar tarefa ao sair da tela para evitar vazamento
         .onDisappear {
             digitacaoTask?.cancel()
         }
@@ -89,17 +83,13 @@ struct TelaExplicacao: View {
         textoCompleto = false
         digitacaoTask?.cancel()
         
-        let textoAlvo = textoAtual // Captura string para uso seguro na Task
+        let textoAlvo = textoAtual
         
         digitacaoTask = Task {
             for char in textoAlvo {
-                // Verificação de cancelamento
                 if Task.isCancelled { return }
+                try? await Task.sleep(nanoseconds: 50_000_000)
                 
-                // Pausa não bloqueante (substitui o Timer)
-                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 segundos
-                
-                // Atualização segura na Main Thread (Views são @MainActor por padrão)
                 if !Task.isCancelled {
                     textoExibido.append(char)
                 }
@@ -112,12 +102,10 @@ struct TelaExplicacao: View {
     
     func tratarClique() {
         if !textoCompleto {
-            // Completar texto instantaneamente
             digitacaoTask?.cancel()
             textoExibido = textoAtual
             textoCompleto = true
         } else {
-            // Avançar
             if estado.textoExplicacaoIndex < estado.textosExplicacao.count - 1 {
                 estado.textoExplicacaoIndex += 1
                 comecarDigitacao()
@@ -129,8 +117,8 @@ struct TelaExplicacao: View {
         }
     }
 }
+
 #Preview(traits: .landscapeLeft) {
-    // Cria um estado de jogo de exemplo para o Preview
     let exemplo = EstadoDoJogo()
     return TelaExplicacao(estado: exemplo)
 }

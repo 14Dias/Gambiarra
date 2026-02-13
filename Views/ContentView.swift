@@ -1,17 +1,16 @@
 import SwiftUI
 import AVFoundation
 
-
-
 // MARK: - ESTADO DO JOGO
 
+@MainActor
 class EstadoDoJogo: ObservableObject {
     @Published var telaAtual: TelaJogo = .inicio
     @Published var materiais: [MaterialDescoberto] = []
     @Published var combinacoes: [CombinacaoCraft] = []
     @Published var rodadaCraftAtual: Int = 1
     
-    // Controle da Explicação
+    // Controle da Explicação 1
     @Published var textoExplicacaoIndex: Int = 0
     let textosExplicacao = [
         "Did you know everything around you was created by someone?",
@@ -65,7 +64,8 @@ class EstadoDoJogo: ObservableObject {
 // MARK: - VIEW PRINCIPAL
 
 struct ContentView: View {
-    @ObservedObject private var estado = EstadoDoJogo()
+    // CORREÇÃO: StateObject garante que o objeto não morra quando a View recarrega
+    @StateObject private var estado = EstadoDoJogo()
     
     var body: some View {
         ZStack {
@@ -79,6 +79,9 @@ struct ContentView: View {
             case .descoberta:
                 TelaDescoberta(estado: estado)
                     .transition(.opacity)
+            case .explicacao2:
+                TelaExplicacao2(estado: estado)
+                    .transition(.opacity)
             case .craft:
                 TelaCraft(estado: estado)
                     .transition(.opacity)
@@ -91,7 +94,6 @@ struct ContentView: View {
     }
 }
 
-#Preview (traits: .landscapeLeft){
+#Preview(traits: .landscapeLeft) {
     ContentView()
 }
-

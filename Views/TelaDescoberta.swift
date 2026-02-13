@@ -49,22 +49,12 @@ struct TelaDescoberta: View {
                 .padding(50)
                 
                 if let focado = materialFocado, mostrarInfo {
-                    // Camada de Liquid Glass entre o fundo e o objeto focado
-                    if #available(iOS 18.0, *) {
-                        Rectangle()
-                            .fill(Color.clear)
-                            .ignoresSafeArea()
-                            .glassEffect(.regular.tint(.white.opacity(0.15)).interactive(), in: .rect(cornerRadius: 0))
-                            .zIndex(5)
-                            .onTapGesture { fecharFoco() }
-                    } else {
-                        // Fallback para iOS anteriores usando Material
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .ignoresSafeArea()
-                            .zIndex(5)
-                            .onTapGesture { fecharFoco() }
-                    }
+                    // Camada de visualização focada
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                        .zIndex(5)
+                        .onTapGesture { fecharFoco() }
                     
                     VStack(spacing: 20) {
                         Image(focado.assetImagem)
@@ -104,7 +94,8 @@ struct TelaDescoberta: View {
                 .onEnded { value in
                     guard estado.todosMateriaisDescobertos else { return }
                     if abs(value.translation.width) > 80 && abs(value.translation.height) < 60 {
-                        withAnimation { estado.avancarParaCraft() }
+                        // ALTERAÇÃO: Agora vai para a Explicação 2 em vez do Craft direto
+                        withAnimation { estado.telaAtual = .explicacao2 }
                     }
                 }
         )
@@ -132,9 +123,8 @@ struct TelaDescoberta: View {
         }
     }
 }
+
 #Preview(traits: .landscapeLeft) {
-    // Cria um estado de jogo de exemplo para o Preview
     let exemplo = EstadoDoJogo()
     return TelaDescoberta(estado: exemplo)
 }
-

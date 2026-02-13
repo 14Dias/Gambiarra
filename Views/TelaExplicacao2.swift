@@ -1,34 +1,26 @@
-//
-//  TelaExplicacao 2.swift
-//  PlaygroundTemplate
-//
-//  Created by Luca Dias on 12/02/26.
-//
-
-
 import SwiftUI
 import AVFoundation
 
-let textosExplicacao2 = [
-    "Did you know everything around you was created by someone?",
-    "Before existing, every object started as a PROTOTYPE...",
-    "A first version made to test ideas!",
-    "Today you're going to learn how to create your own prototypes.",
-    "Let’s start by finding the materials we need!"
-]
 struct TelaExplicacao2: View {
     @ObservedObject var estado: EstadoDoJogo
+    
+    // Textos locais desta tela
+    private let textosExplicacao2 = [
+        "Great job finding all the materials!",
+        "Now comes the best part...",
+        "Let's put them together and BUILD something!",
+        "Drag the materials to the slots to combine them."
+    ]
+    
     @State private var textoExibido: String = ""
     @State private var textoCompleto: Bool = false
-    @State private var fase = 0
-    @State private var textoExplicacaoIndex2: Int = 0
+    @State private var textoIndex: Int = 0
     
-    // CORREÇÃO: Usamos Task em vez de Timer para segurança de concorrência
     @State private var digitacaoTask: Task<Void, Never>?
     
     var textoAtual: String {
-        if textoExplicacaoIndex2 < textosExplicacao2.count {
-            return textosExplicacao2[textoExplicacaoIndex2]
+        if textoIndex < textosExplicacao2.count {
+            return textosExplicacao2[textoIndex]
         }
         return ""
     }
@@ -71,11 +63,9 @@ struct TelaExplicacao2: View {
                             .offset(y: -120)
                         }
 
-                        // Reserva de espaço à direita para o gato (200 de largura + 32 de margem)
                         Spacer().frame(width: 232)
                     }
 
-                    // GatoB ancorado à direita por cima da caixa de texto
                     HStack {
                         Spacer()
                         Image("GatoB")
@@ -91,7 +81,6 @@ struct TelaExplicacao2: View {
         .onAppear {
             comecarDigitacao()
         }
-        // Cancelar tarefa ao sair da tela para evitar vazamento
         .onDisappear {
             digitacaoTask?.cancel()
         }
@@ -105,17 +94,13 @@ struct TelaExplicacao2: View {
         textoCompleto = false
         digitacaoTask?.cancel()
         
-        let textoAlvo = textoAtual // Captura string para uso seguro na Task
+        let textoAlvo = textoAtual
         
         digitacaoTask = Task {
             for char in textoAlvo {
-                // Verificação de cancelamento
                 if Task.isCancelled { return }
+                try? await Task.sleep(nanoseconds: 50_000_000)
                 
-                // Pausa não bloqueante (substitui o Timer)
-                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 segundos
-                
-                // Atualização segura na Main Thread (Views são @MainActor por padrão)
                 if !Task.isCancelled {
                     textoExibido.append(char)
                 }
@@ -128,24 +113,24 @@ struct TelaExplicacao2: View {
     
     func tratarClique() {
         if !textoCompleto {
-            // Completar texto instantaneamente
             digitacaoTask?.cancel()
             textoExibido = textoAtual
             textoCompleto = true
         } else {
-            // Avançar
-            if textoExplicacaoIndex2 < textosExplicacao2.count - 1 {
-               textoExplicacaoIndex2 += 1
+            if textoIndex < textosExplicacao2.count - 1 {
+               textoIndex += 1
                 comecarDigitacao()
             } else {
+                // ALTERAÇÃO: Ao final, vai para o Craft
                 withAnimation {
-                    estado.telaAtual = .explicacao2
+                    estado.avancarParaCraft()
                 }
             }
         }
     }
 }
-#Preview(traits: .landscapeLeft) {
-    TelaExplicacao2()
-}
 
+#Preview(traits: .landscapeLeft) {
+    let exemplo = EstadoDoJogo()
+    return TelaExplicacao2(estado: exemplo)
+}
